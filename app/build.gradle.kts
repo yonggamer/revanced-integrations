@@ -49,6 +49,7 @@ dependencies {
     compileOnly(libs.annotation)
     compileOnly(libs.okhttp)
     compileOnly(libs.retrofit)
+    implementation("com.github.TeamNewPipe:NewPipeExtractor:0.24.0")
 
     compileOnly(project(":stub"))
 }

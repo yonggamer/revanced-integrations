@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 
 @Deprecated
-final class PlayerRoutes {
+public final class PlayerRoutes {
     private static final String YT_API_URL = "https://www.youtube.com/youtubei/v1/";
     static final Route.CompiledRoute GET_STORYBOARD_SPEC_RENDERER = new Route(
             Route.Method.POST,
@@ -84,10 +84,11 @@ final class PlayerRoutes {
     }
 
     /** @noinspection SameParameterValue*/
-    static HttpURLConnection getPlayerResponseConnectionFromRoute(Route.CompiledRoute route) throws IOException {
+    public static HttpURLConnection getPlayerResponseConnectionFromRoute(Route.CompiledRoute route) throws IOException {
         var connection = Requester.getConnectionFromCompiledRoute(YT_API_URL, route);
 
         connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0");
 
         connection.setUseCaches(false);
         connection.setDoOutput(true);

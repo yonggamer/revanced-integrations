@@ -12,6 +12,16 @@ public class Test {
     public static String hook(String s) {
         if (!s.contains("googlevideo")) return s;
 
+        if (true) {
+            var c2 = new Throwable().getStackTrace()[2].toString();
+            var c = new Throwable().getStackTrace()[1].toString();
+            var itag = Uri.parse(s).getQueryParameter("itag");
+            Logger.printInfo(() -> "Hooked " + c2 + ": itag: " + itag);
+            Logger.printInfo(() -> "Hooked " + c  + ": itag: " + itag);
+
+            return s;
+        }
+
         if (formats == null)
             formats = StoryboardRendererRequester.getFormats("piKJAUwCYTo");
 

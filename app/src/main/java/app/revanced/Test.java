@@ -1,6 +1,7 @@
 package app.revanced;
 
 import android.net.Uri;
+import android.os.StrictMode;
 import androidx.annotation.Nullable;
 import app.revanced.integrations.shared.Logger;
 import app.revanced.integrations.shared.Utils;
@@ -18,7 +19,10 @@ import org.schabi.newpipe.extractor.stream.VideoStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Test {
     private static Map<Integer, String> formats = new HashMap<>();
@@ -34,6 +38,8 @@ public class Test {
             HttpURLConnection connection = (HttpURLConnection) new URL(request.url()).openConnection();
             connection.setRequestMethod(request.httpMethod());
 
+            connection.setUseCaches(false);
+            connection.setDoOutput(true);
 
             String agentString = "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0";
             connection.setRequestProperty("User-Agent", agentString);
@@ -76,6 +82,9 @@ public class Test {
         if (!s.contains("googlevideo")) return s;
         if (formats.isEmpty()) {
             try {
+                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+                StrictMode.setThreadPolicy(policy);
+
                 NewPipe.init(new Downloader() {
                     @Override
                     public Response execute(Request request) throws IOException {
@@ -87,7 +96,7 @@ public class Test {
                                 Requester.parseString(c),
                                 c.getURL().toString()
                         );
-                        c.disconnect();;
+                        c.disconnect();
                         return r;
                     }
                 });
@@ -108,7 +117,6 @@ public class Test {
             } catch (ExtractionException | IOException ignored) {
                 Logger.printInfo(() -> "Hooked Error making request: " + ignored.getMessage(), ignored);
             }
-
             //formats = StoryboardRendererRequester.getFormats("piKJAUwCYTo");
         }
         var itag = Uri.parse(s).getQueryParameter("itag");

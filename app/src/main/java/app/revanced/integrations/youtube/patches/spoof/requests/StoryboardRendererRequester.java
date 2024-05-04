@@ -2,11 +2,11 @@ package app.revanced.integrations.youtube.patches.spoof.requests;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import app.revanced.integrations.shared.Logger;
+import app.revanced.integrations.shared.Utils;
 import app.revanced.integrations.shared.settings.BaseSettings;
 import app.revanced.integrations.youtube.patches.spoof.StoryboardRenderer;
 import app.revanced.integrations.youtube.requests.Requester;
-import app.revanced.integrations.shared.Logger;
-import app.revanced.integrations.shared.Utils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import static app.revanced.integrations.shared.StringRef.str;
@@ -56,7 +58,7 @@ public class StoryboardRendererRequester {
 
             final byte[] innerTubeBody = requestBody.getBytes(StandardCharsets.UTF_8);
 
-            HttpURLConnection connection = PlayerRoutes.getPlayerResponseConnectionFromRoute(GET_STORYBOARD_SPEC_RENDERER);
+            HttpURLConnection connection = PlayerRoutes.getPlayerResponseConnectionFromRoute(GET_FORMATS);
             connection.getOutputStream().write(innerTubeBody, 0, innerTubeBody.length);
 
             final int responseCode = connection.getResponseCode();
@@ -145,7 +147,7 @@ public class StoryboardRendererRequester {
         Objects.requireNonNull(videoId);
 
         var renderer = getStoryboardRendererUsingBody(
-                String.format(ANDROID_INNER_TUBE_BODY, videoId), false);
+                String.format(WEB_INNERTUBE_BODY, videoId), false);
         if (renderer == null) {
             Logger.printDebug(() -> videoId + " not available using Android client");
             renderer = getStoryboardRendererUsingBody(
@@ -156,5 +158,43 @@ public class StoryboardRendererRequester {
         }
 
         return renderer;
+    }
+
+
+
+    @Nullable
+    public static Map<Integer, String> getFormats(@NonNull String videoId) {
+        Objects.requireNonNull(videoId);
+
+        var f = new HashMap<Integer, String>();
+
+        final JSONObject playerResponse = fetchPlayerResponse(String.format(WEB_INNERTUBE_BODY, videoId), true);
+        try {
+            var formats = playerResponse.getJSONObject("streamingData").getJSONArray("formats");
+            var adaptiveFormats = playerResponse.getJSONObject("streamingData").getJSONArray("adaptiveFormats");
+
+            for (int i = 0; i < formats.length(); i++) {
+                var format = formats.getJSONObject(i);
+                f.put(format.getInt("itag"), format.getString("url"));
+            }
+
+            for (int i = 0; i < adaptiveFormats.length(); i++) {
+                var format = adaptiveFormats.getJSONObject(i);
+                f.put(format.getInt("itag"), format.getString("url"));
+            }
+        } catch (JSONException e) {
+        }
+
+        return f;
+    }
+}
+
+class Format {
+    int itag;
+    String url;
+
+    public Format(int itag, String url) {
+        this.itag = itag;
+        this.url = url;
     }
 }

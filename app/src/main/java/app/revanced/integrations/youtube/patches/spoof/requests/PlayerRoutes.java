@@ -1,9 +1,8 @@
 package app.revanced.integrations.youtube.patches.spoof.requests;
 
+import app.revanced.integrations.shared.Logger;
 import app.revanced.integrations.youtube.requests.Requester;
 import app.revanced.integrations.youtube.requests.Route;
-import app.revanced.integrations.shared.Logger;
-import app.revanced.integrations.shared.Utils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,7 +20,13 @@ final class PlayerRoutes {
                     "playabilityStatus.status"
     ).compile();
 
-    static final String ANDROID_INNER_TUBE_BODY;
+    static final Route.CompiledRoute GET_FORMATS = new Route(
+            Route.Method.POST,
+            "player" +
+                    "?fields=streamingData.formats.itag,streamingData.formats.url,streamingData.adaptiveFormats.itag,streamingData.adaptiveFormats.url"
+    ).compile();
+
+    static final String WEB_INNERTUBE_BODY;
     static final String TV_EMBED_INNER_TUBE_BODY;
 
     /**
@@ -36,9 +41,8 @@ final class PlayerRoutes {
             JSONObject context = new JSONObject();
 
             JSONObject client = new JSONObject();
-            client.put("clientName", "ANDROID");
-            client.put("clientVersion", Utils.getAppVersionName());
-            client.put("androidSdkVersion", 34);
+            client.put("clientName", "WEB");
+            client.put("clientVersion", "2.20240111.09.00");
 
             context.put("client", client);
 
@@ -48,7 +52,7 @@ final class PlayerRoutes {
             Logger.printException(() -> "Failed to create innerTubeBody", e);
         }
 
-        ANDROID_INNER_TUBE_BODY = innerTubeBody.toString();
+        WEB_INNERTUBE_BODY = innerTubeBody.toString();
 
         JSONObject tvEmbedInnerTubeBody = new JSONObject();
 
@@ -83,12 +87,6 @@ final class PlayerRoutes {
     static HttpURLConnection getPlayerResponseConnectionFromRoute(Route.CompiledRoute route) throws IOException {
         var connection = Requester.getConnectionFromCompiledRoute(YT_API_URL, route);
 
-        connection.setRequestProperty(
-                "User-Agent", "com.google.android.youtube/" +
-                        Utils.getAppVersionName() +
-                        " (Linux; U; Android 12; GB) gzip"
-        );
-        connection.setRequestProperty("X-Goog-Api-Format-Version", "2");
         connection.setRequestProperty("Content-Type", "application/json");
 
         connection.setUseCaches(false);

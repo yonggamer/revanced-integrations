@@ -155,12 +155,11 @@ public class Test {
         Logger.printInfo(() -> "Hooked nearest " + nearest);
 
         String m = formats.get(nearest);
-        Logger.printInfo(() -> String.valueOf(("Hooked format " + m == null)));
         if (m == null) {
             Logger.printInfo(() -> "Hooked format null");
             return s;
         }
-        Logger.printInfo(() -> "Hooked");
+        Logger.printInfo(() -> "Hooked format " + m);
         return m;
     }
 }

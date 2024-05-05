@@ -1,9 +1,9 @@
 package app.revanced;
 
 import android.net.Uri;
-import android.os.StrictMode;
 import androidx.annotation.Nullable;
 import app.revanced.integrations.shared.Logger;
+import app.revanced.integrations.shared.Utils;
 import app.revanced.integrations.youtube.requests.Requester;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.downloader.Downloader;
@@ -78,61 +78,60 @@ public class Test {
 
         if (!s.contains("googlevideo")) return s;
         if (formats == null) {
-            var f = new HashMap<Integer, String>();
             Logger.printInfo(() -> "Hooked start");
             try {
-                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-                StrictMode.setThreadPolicy(policy);
-
-                NewPipe.init(new Downloader() {
-                    @Override
-                    public Response execute(Request request) throws IOException {
-                        var c = makeRequest(request);
-                        Logger.printInfo(() -> "Hooked got response");
-                        var body = false;
-                        try{
-                            body = c.getInputStream() != null;
-                        } catch (Exception e) {
-                            Logger.printInfo(() -> "Hooked Error making request: " + e.getMessage(), e);
+                formats = Utils.submitOnBackgroundThread(() -> {
+                    var f = new HashMap<Integer, String>();
+                    NewPipe.init(new Downloader() {
+                        @Override
+                        public Response execute(Request request) throws IOException {
+                            var c = makeRequest(request);
+                            Logger.printInfo(() -> "Hooked got response");
+                            var body = false;
+                            try{
+                                body = c.getInputStream() != null;
+                            } catch (Exception e) {
+                                Logger.printInfo(() -> "Hooked Error making request: " + e.getMessage(), e);
+                            }
+                            Response r = null;
+                            try {
+                                r = new Response(
+                                        c.getResponseCode(),
+                                        c.getResponseMessage(),
+                                        c.getHeaderFields(),
+                                        body ? Requester.parseString(c) : null,
+                                        c.getURL().toString()
+                                );
+                            } catch (IOException e) {
+                                Logger.printInfo(() -> "Hooked Error making request: " + e.getMessage(), e);
+                                throw e;
+                            }
+                            c.disconnect();
+                            return r;
                         }
-                        Response r = null;
-                        try {
-                            r = new Response(
-                                    c.getResponseCode(),
-                                    c.getResponseMessage(),
-                                    c.getHeaderFields(),
-                                    body ? Requester.parseString(c) : null,
-                                    c.getURL().toString()
-                            );
-                        } catch (IOException e) {
-                            Logger.printInfo(() -> "Hooked Error making request: " + e.getMessage(), e);
-                            throw e;
-                        }
-                        c.disconnect();
-                        return r;
+                    });
+                    var extractor = new YoutubeService(1).getStreamExtractor(YoutubeStreamLinkHandlerFactory.getInstance().fromId("piKJAUwCYTo"));
+                    extractor.fetchPage();
+                    Logger.printInfo(() -> "Hooked got extractor");
+                    for (AudioStream audioStream : extractor.getAudioStreams()) {
+                        f.put(audioStream.getItag(), audioStream.getContent());
                     }
-                });
-                var extractor = new YoutubeService(1).getStreamExtractor(YoutubeStreamLinkHandlerFactory.getInstance().fromId("piKJAUwCYTo"));
-                extractor.fetchPage();
-                Logger.printInfo(() -> "Hooked got extractor");
-                for (AudioStream audioStream : extractor.getAudioStreams()) {
-                    f.put(audioStream.getItag(), audioStream.getContent());
-                }
 
-                Logger.printInfo(() -> "Hooked got audio");
+                    Logger.printInfo(() -> "Hooked got audio");
 
-                for (VideoStream videoOnlyStream : extractor.getVideoOnlyStreams()) {
-                    f.put(videoOnlyStream.getItag(), videoOnlyStream.getContent());
-                }
+                    for (VideoStream videoOnlyStream : extractor.getVideoOnlyStreams()) {
+                        f.put(videoOnlyStream.getItag(), videoOnlyStream.getContent());
+                    }
 
-                Logger.printInfo(() -> "Hooked got video only");
+                    Logger.printInfo(() -> "Hooked got video only");
 
-                for (VideoStream videoStream : extractor.getVideoStreams()) {
-                    f.put(videoStream.getItag(), videoStream.getContent());
-                }
+                    for (VideoStream videoStream : extractor.getVideoStreams()) {
+                        f.put(videoStream.getItag(), videoStream.getContent());
+                    }
+                    Logger.printInfo(() -> "Hooked got format");
 
-                formats = f;
-                Logger.printInfo(() -> "Hooked got format");
+                    return f;
+                }).get();
 
             } catch (Exception i) {
                 Logger.printInfo(() -> "Hooked Error making request: " + i.getMessage(), i);

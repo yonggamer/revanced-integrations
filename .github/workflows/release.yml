@@ -44,4 +44,3 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: revanced-integrations
-          path: revanced-integrations
